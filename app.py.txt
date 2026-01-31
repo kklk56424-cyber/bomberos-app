@@ -1,0 +1,77 @@
+import streamlit as st
+import pandas as pd
+import time
+from datetime import datetime
+
+st.set_page_config(page_title="Asistente Bomberos 911", page_icon="🚒", layout="wide")
+
+# Base de datos de códigos
+codigos_bomberos = {
+    "10-0": "Falsa alarma",
+    "10-1": "Incendio estructural",
+    "10-2": "Incendio forestal",
+    "10-3": "Rescate vehicular",
+    "10-4": "Recibido / Entendido",
+    "10-7": "Fuera de servicio",
+    "10-8": "En servicio",
+    "10-12": "Apoyo externo",
+    "10-14": "Persona fallecida",
+    "10-20": "Ubicación"
+}
+
+# Inicializar historial
+if "historial" not in st.session_state:
+    st.session_state.historial = []
+
+# SIDEBAR
+st.sidebar.header("🚨 Configuración")
+estacion = st.sidebar.selectbox(
+    "Estación:",
+    ["Central", "Norte", "Sur", "Este", "Oeste"]
+)
+
+# TITULO
+st.title("🚒 Asistente de Códigos - Bomberos 911")
+st.subheader(f"Estación activa: {estacion}")
+
+# TABLA DE CODIGOS
+st.markdown("### 📘 Códigos de Radio")
+df = pd.DataFrame(list(codigos_bomberos.items()), columns=["Código", "Significado"])
+st.dataframe(df, use_container_width=True)
+
+# BUSCADOR
+st.markdown("### 🔍 Buscar código")
+busqueda = st.text_input("Escribe un código o palabra (ej: incendio)")
+
+if busqueda:
+    resultados = df[df.apply(lambda row: busqueda.lower() in row.astype(str).str.lower().to_string(), axis=1)]
+    st.dataframe(resultados, use_container_width=True)
+
+# SIMULADOR
+st.markdown("### 📡 Simulador de llamada")
+codigo = st.selectbox("Código recibido:", list(codigos_bomberos.keys()))
+ubicacion = st.text_input("Ubicación:")
+
+if st.button("Registrar llamada"):
+    with st.spinner("Procesando..."):
+        time.sleep(1)
+
+    registro = {
+        "Hora": datetime.now().strftime("%H:%M:%S"),
+        "Estación": estacion,
+        "Código": codigo,
+        "Significado": codigos_bomberos[codigo],
+        "Ubicación": ubicacion
+    }
+
+    st.session_state.historial.append(registro)
+    st.success("Llamada registrada correctamente 🚨")
+
+# HISTORIAL
+st.markdown("### 📋 Historial de llamadas")
+
+if st.session_state.historial:
+    hist_df = pd.DataFrame(st.session_state.historial)
+    st.dataframe(hist_df, use_container_width=True)
+else:
+    st.info("Aún no hay llamadas registradas.")
